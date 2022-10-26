@@ -10,14 +10,40 @@ base_path = ""
 font_size = 10
 
 color_table = ('red','blue','green','orange','purple')
-font = {'family':'Arial'  #'serif', 
-#         ,'style':'italic'
-        ,'weight': 'normal' 
-#         ,'color':'red'
-        ,'size':6
-       }
 
-def get_inputs(curves):
+def get_scaler(axis):
+    if axis.get('scaler') != None:
+        return axis['scaler']
+    return 1
+
+def get_inputs_y(curves):
+    d = dict()
+    path_book = base_path + curves['book']
+    # read excel file
+    try:
+        if os.path.splitext(path_book)[-1] == '.csv':
+            df = pd.read_csv(path_book)
+        else:
+            df = pd.read_excel(path_book,sheet_name = [curves['sheet']])[curves['sheet']]
+    except:
+        print ("inputs excel file or sheet not exist.")
+        os._exit(0)
+        
+    try:
+        y_data=df.loc[curves['y_axis']['row_start']:curves['y_axis']['row_end'],[df.columns[curves['y_axis']['column']]]].values
+        for i in range(0,len(y_data)):
+            y_data[i][0] = float(y_data[i][0])
+        y_data = np.asarray(y_data) * get_scaler('y_axis')
+        d['y'] = y_data
+    except:
+        print ("BOOK: \'" + curves['book'], "\',    SHEET: \'" + curves['sheet'] + "\'")
+        print ("Invalid YData. They are not numeric")
+        print (y_data)
+        os._exit(0)
+
+    return d
+
+def get_inputs_x(curves, y_data):
     d = dict()
     path_book = base_path + curves['book']
     # read excel file
@@ -34,7 +60,37 @@ def get_inputs(curves):
         x_data=df.loc[curves['x_axis']['row_start']:curves['x_axis']['row_end'],[df.columns[curves['x_axis']['column']]]].values
         for i in range(0,len(x_data)):
             x_data[i][0] = float(x_data[i][0])
-        x_data = np.asarray(x_data) * curves['x_axis']['scaler']
+        x_data = np.asarray(x_data) * get_scaler('x_axis')
+        d['x'] = x_data
+    except:
+        print ("BOOK: \'" + curves['book'], "\',    SHEET: \'" + curves['sheet'] + "\'")
+        print ("Invalid XData. They are not numeric")
+        print (x_data)
+        os._exit(0)
+
+    d['y'] = y_data
+
+    d['name'] = curves['name']
+    return d
+
+def get_inputs_xy(curves):
+    d = dict()
+    path_book = base_path + curves['book']
+    # read excel file
+    try:
+        if os.path.splitext(path_book)[-1] == '.csv':
+            df = pd.read_csv(path_book)
+        else:
+            df = pd.read_excel(path_book,sheet_name = [curves['sheet']])[curves['sheet']]
+    except:
+        print ("inputs excel file or sheet not exist.")
+        os._exit(0)
+        
+    try:
+        x_data=df.loc[curves['x_axis']['row_start']:curves['x_axis']['row_end'],[df.columns[curves['x_axis']['column']]]].values
+        for i in range(0,len(x_data)):
+            x_data[i][0] = float(x_data[i][0])
+        x_data = np.asarray(x_data) * get_scaler('x_axis')
         d['x'] = x_data
     except:
         print ("BOOK: \'" + curves['book'], "\',    SHEET: \'" + curves['sheet'] + "\'")
@@ -46,7 +102,7 @@ def get_inputs(curves):
         y_data=df.loc[curves['y_axis']['row_start']:curves['y_axis']['row_end'],[df.columns[curves['y_axis']['column']]]].values
         for i in range(0,len(y_data)):
             y_data[i][0] = float(y_data[i][0])
-        y_data = np.asarray(y_data) * curves['y_axis']['scaler']
+        y_data = np.asarray(y_data) * get_scaler('y_axis')
         d['y'] = y_data
     except:
         print ("BOOK: \'" + curves['book'], "\',    SHEET: \'" + curves['sheet'] + "\'")
@@ -55,7 +111,6 @@ def get_inputs(curves):
         os._exit(0)
 
     d['name'] = curves['name']
-    print (d)
     return d
 
 def add_to_xls(outputs, fig):
@@ -156,8 +211,12 @@ if __name__ == "__main__":
                 else:
                     l_plots['type'] = None
                 l_plots['curves'] = list()
-                for j_curves in j_subplots['curves']:
-                    l_plots['curves'].append(get_inputs(j_curves))
+                if j_subplots.get('curve_y') != None:
+                    y_curve = get_input_y(j_subplots['curve_y'])
+                    l_plots['curves'].append(get_inputs_x(j_curves,y_curve))
+                else:
+                    for j_curves in j_subplots['curves']:
+                        l_plots['curves'].append(get_inputs_xy(j_curves))
                 l_inputs.append(l_plots)
         except:
             print ("invalid json script format, please check it")

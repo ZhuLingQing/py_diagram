@@ -16,33 +16,6 @@ def get_scaler(axis):
         return axis['scaler']
     return 1
 
-def get_inputs_y(curves):
-    d = dict()
-    path_book = base_path + curves['book']
-    # read excel file
-    try:
-        if os.path.splitext(path_book)[-1] == '.csv':
-            df = pd.read_csv(path_book)
-        else:
-            df = pd.read_excel(path_book,sheet_name = [curves['sheet']])[curves['sheet']]
-    except:
-        print ("inputs excel file or sheet not exist.")
-        os._exit(0)
-        
-    try:
-        y_data=df.loc[curves['y_axis']['row_start']:curves['y_axis']['row_end'],[df.columns[curves['y_axis']['column']]]].values
-        for i in range(0,len(y_data)):
-            y_data[i][0] = float(y_data[i][0])
-        y_data = np.asarray(y_data) * get_scaler('y_axis')
-        d['y'] = y_data
-    except:
-        print ("BOOK: \'" + curves['book'], "\',    SHEET: \'" + curves['sheet'] + "\'")
-        print ("Invalid YData. They are not numeric")
-        print (y_data)
-        os._exit(0)
-
-    return d
-
 def get_inputs_x(curves, y_data):
     d = dict()
     path_book = base_path + curves['book']
@@ -60,7 +33,7 @@ def get_inputs_x(curves, y_data):
         x_data=df.loc[curves['x_axis']['row_start']:curves['x_axis']['row_end'],[df.columns[curves['x_axis']['column']]]].values
         for i in range(0,len(x_data)):
             x_data[i][0] = float(x_data[i][0])
-        x_data = np.asarray(x_data) * get_scaler('x_axis')
+        x_data = np.asarray(x_data) * get_scaler(curves['x_axis'])
         d['x'] = x_data
     except:
         print ("BOOK: \'" + curves['book'], "\',    SHEET: \'" + curves['sheet'] + "\'")
@@ -71,6 +44,7 @@ def get_inputs_x(curves, y_data):
     d['y'] = y_data
 
     d['name'] = curves['name']
+    print (d)
     return d
 
 def get_inputs_xy(curves):
@@ -90,7 +64,7 @@ def get_inputs_xy(curves):
         x_data=df.loc[curves['x_axis']['row_start']:curves['x_axis']['row_end'],[df.columns[curves['x_axis']['column']]]].values
         for i in range(0,len(x_data)):
             x_data[i][0] = float(x_data[i][0])
-        x_data = np.asarray(x_data) * get_scaler('x_axis')
+        x_data = np.asarray(x_data) * get_scaler(curves['x_axis'])
         d['x'] = x_data
     except:
         print ("BOOK: \'" + curves['book'], "\',    SHEET: \'" + curves['sheet'] + "\'")
@@ -102,7 +76,7 @@ def get_inputs_xy(curves):
         y_data=df.loc[curves['y_axis']['row_start']:curves['y_axis']['row_end'],[df.columns[curves['y_axis']['column']]]].values
         for i in range(0,len(y_data)):
             y_data[i][0] = float(y_data[i][0])
-        y_data = np.asarray(y_data) * get_scaler('y_axis')
+        y_data = np.asarray(y_data) * get_scaler(curves['y_axis'])
         d['y'] = y_data
     except:
         print ("BOOK: \'" + curves['book'], "\',    SHEET: \'" + curves['sheet'] + "\'")
@@ -111,6 +85,7 @@ def get_inputs_xy(curves):
         os._exit(0)
 
     d['name'] = curves['name']
+    print (d)
     return d
 
 def add_to_xls(outputs, fig):
@@ -196,7 +171,7 @@ if __name__ == "__main__":
             load_dict = json.load(load_fp)
             #print(load_dict)
             base_path = load_dict['Path']
-            if base_path[-1] != '\\' and base_path[-1] != '/':
+            if base_path[-1] != '//' and base_path[-1] != '/':
                 base_path += "/"
             font_size = load_dict['outputs']['layout']['font_size']
             j_inputs = load_dict['inputs']
@@ -212,7 +187,7 @@ if __name__ == "__main__":
                     l_plots['type'] = None
                 l_plots['curves'] = list()
                 if j_subplots.get('curve_y') != None:
-                    y_curve = get_input_y(j_subplots['curve_y'])
+                    y_curve = get_inputs_xy(j_subplots['curve_y'])
                     l_plots['curves'].append(get_inputs_x(j_curves,y_curve))
                 else:
                     for j_curves in j_subplots['curves']:
